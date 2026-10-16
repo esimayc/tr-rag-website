@@ -1,0 +1,1357 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="TR-RAG is a Turkish-focused Retrieval-Augmented Generation research project for reliable, source-grounded question answering.">
+
+<title>TR-RAG | Turkish Question Answering with Sources</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --cyan:#00B2CA;
+  --navy:#003049;
+  --cream:#FDF0D5;
+  --red:#C1121F;
+  --maroon:#780000;
+  --ink:#10222e;
+  --muted:#4b6272;
+  --line:rgba(0,48,73,.18);
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+
+*{box-sizing:border-box}
+
+html{
+  scroll-behavior:smooth;
+  scroll-padding-top:76px;
+}
+
+body{
+  margin:0;
+  background:var(--cream);
+  color:var(--ink);
+  font:400 1rem/1.7 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+
+a{color:inherit}
+
+.wrap{
+  max-width:1080px;
+  margin:0 auto;
+  padding:0 6%;
+}
+
+/* NAVIGATION */
+
+header.nav{
+  position:fixed;
+  inset:0 0 auto 0;
+  z-index:50;
+  background:rgba(0,48,73,.97);
+  color:var(--cream);
+}
+
+.nav .wrap{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:62px;
+  gap:20px;
+}
+
+.brand{
+  font:700 1.15rem var(--serif);
+  letter-spacing:.02em;
+  text-decoration:none;
+  white-space:nowrap;
+}
+
+.brand span{color:var(--cyan)}
+
+.nav ul{
+  display:flex;
+  gap:6px;
+  list-style:none;
+  margin:0;
+  padding:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+
+.nav ul::-webkit-scrollbar{display:none}
+
+.nav a.link{
+  display:block;
+  padding:8px 12px;
+  font-size:.88rem;
+  font-weight:500;
+  text-decoration:none;
+  color:rgba(253,240,213,.72);
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:color .2s,border-color .2s;
+}
+
+.nav a.link:hover{color:var(--cream)}
+
+.nav a.link.active{
+  color:var(--cream);
+  border-bottom-color:var(--cyan);
+}
+
+.progress{
+  position:absolute;
+  left:0;
+  bottom:0;
+  height:2px;
+  width:0;
+  background:var(--red);
+}
+
+/* HERO */
+
+.hero{
+  background:var(--navy);
+  color:var(--cream);
+  padding:150px 0 90px;
+}
+
+.hero .wrap{
+  display:grid;
+  grid-template-columns:1.25fr 1fr;
+  gap:56px;
+  align-items:center;
+}
+
+.eyebrow{
+  font:600 .78rem var(--sans);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  margin:0 0 18px;
+}
+
+.hero h1{
+  font:700 clamp(2.1rem,4.6vw,3.4rem)/1.12 var(--serif);
+  margin:0 0 22px;
+}
+
+.hero p.lead{
+  font-size:1.08rem;
+  color:rgba(253,240,213,.82);
+  max-width:540px;
+  margin:0 0 32px;
+}
+
+.btns{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  display:inline-block;
+  padding:12px 24px;
+  font:600 .9rem var(--sans);
+  text-decoration:none;
+  border:1.5px solid var(--cyan);
+  transition:.2s;
+}
+
+.btn.solid{
+  background:var(--cyan);
+  color:var(--navy);
+}
+
+.btn.solid:hover{
+  background:var(--cream);
+  border-color:var(--cream);
+}
+
+.btn.ghost{color:var(--cream)}
+
+.btn.ghost:hover{
+  background:var(--cyan);
+  color:var(--navy);
+}
+
+/* EXAMPLE Q&A */
+
+.qa{
+  background:var(--cream);
+  color:var(--ink);
+  padding:22px 24px;
+  border-left:4px solid var(--cyan);
+  font-size:.9rem;
+  box-shadow:10px 10px 0 rgba(0,178,202,.25);
+}
+
+.qa .row+.row{
+  margin-top:18px;
+  padding-top:18px;
+  border-top:1px dashed var(--line);
+}
+
+.qa .q{
+  font-weight:600;
+  color:var(--navy);
+}
+
+.qa .lbl{
+  font:600 .68rem var(--sans);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  display:block;
+  margin-bottom:4px;
+}
+
+.qa sup{
+  color:var(--red);
+  font-weight:700;
+}
+
+.qa .src{
+  display:block;
+  margin-top:8px;
+  font-size:.78rem;
+  color:var(--muted);
+}
+
+.qa .none{
+  color:var(--maroon);
+  font-style:italic;
+}
+
+/* SECTIONS */
+
+section{
+  padding:92px 0;
+  border-bottom:1px solid var(--line);
+}
+
+section.alt{background:#f9e6c0}
+
+.sec-head{
+  display:grid;
+  grid-template-columns:120px 1fr;
+  gap:24px;
+  margin-bottom:44px;
+}
+
+.num{
+  font:700 3.2rem/1 var(--serif);
+  color:var(--cyan);
+}
+
+.sec-head h2{
+  font:700 clamp(1.7rem,3vw,2.3rem) var(--serif);
+  color:var(--navy);
+  margin:0 0 8px;
+}
+
+.sec-head p{
+  margin:0;
+  color:var(--muted);
+  max-width:600px;
+}
+
+.body{margin-left:144px}
+
+.body > p{
+  max-width:680px;
+  margin:0 0 18px;
+}
+
+/* KEY FEATURES */
+
+.points{
+  margin-top:34px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:0 40px;
+}
+
+.point{
+  padding:18px 0;
+  border-top:2px solid var(--navy);
+}
+
+.point h3{
+  font:600 1.02rem var(--serif);
+  margin:0 0 4px;
+  color:var(--navy);
+}
+
+.point p{
+  margin:0;
+  font-size:.92rem;
+  color:var(--muted);
+}
+
+/* WHY TURKISH */
+
+.language-intro{
+  max-width:720px;
+  margin-bottom:30px;
+}
+
+.language-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:18px;
+}
+
+.language-card{
+  padding:24px;
+  border:1px solid var(--line);
+  border-top:3px solid var(--cyan);
+  background:rgba(253,240,213,.65);
+}
+
+.language-card .tag{
+  display:block;
+  font:600 .7rem var(--sans);
+  letter-spacing:.12em;
+  color:var(--maroon);
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.language-card h3{
+  font:600 1.15rem var(--serif);
+  color:var(--navy);
+  margin:0 0 10px;
+}
+
+.language-card p{
+  font-size:.91rem;
+  line-height:1.65;
+  color:var(--muted);
+  margin:0;
+}
+
+.language-example{
+  margin-top:28px;
+  padding:23px 26px;
+  background:var(--navy);
+  color:var(--cream);
+  border-left:4px solid var(--cyan);
+}
+
+.language-example .example-title{
+  display:block;
+  color:var(--cyan);
+  font-size:.72rem;
+  font-weight:600;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.language-example .word{
+  font:600 clamp(1.15rem,2.5vw,1.5rem) var(--serif);
+  overflow-wrap:anywhere;
+  margin-bottom:8px;
+}
+
+.language-example .word span{
+  color:var(--cyan);
+}
+
+.language-example p{
+  font-size:.9rem;
+  color:rgba(253,240,213,.8);
+  margin:0;
+}
+
+/* METHOD PIPELINE */
+
+.pipe{
+  list-style:none;
+  margin:0;
+  padding:0;
+  counter-reset:p;
+}
+
+.pipe li{
+  counter-increment:p;
+  display:grid;
+  grid-template-columns:56px 220px 1fr;
+  gap:16px;
+  padding:20px 0;
+  border-top:1px solid var(--line);
+  align-items:baseline;
+}
+
+.pipe li:last-child{
+  border-bottom:1px solid var(--line);
+}
+
+.pipe li::before{
+  content:"0" counter(p);
+  font:700 1.05rem var(--serif);
+  color:var(--red);
+}
+
+.pipe b{
+  font:600 1.02rem var(--serif);
+  color:var(--navy);
+}
+
+.pipe span{
+  color:var(--muted);
+  font-size:.94rem;
+}
+
+/* EVALUATION TABLE */
+
+.tw{overflow-x:auto}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:520px;
+  background:var(--cream);
+}
+
+th{
+  background:var(--navy);
+  color:var(--cream);
+  text-align:left;
+  font:600 .78rem var(--sans);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  padding:13px 16px;
+}
+
+td{
+  padding:15px 16px;
+  border-bottom:1px solid var(--line);
+  vertical-align:top;
+  font-size:.94rem;
+}
+
+td:first-child{
+  font-weight:600;
+  color:var(--navy);
+  white-space:nowrap;
+}
+
+/* RESOURCES */
+
+.list a{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  padding:16px 4px;
+  border-top:1px solid var(--line);
+  text-decoration:none;
+  font-weight:500;
+  transition:.2s;
+}
+
+.list a:last-child{
+  border-bottom:1px solid var(--line);
+}
+
+.list a small{
+  color:var(--muted);
+  font-weight:400;
+}
+
+.list a em{
+  font:600 .75rem var(--sans);
+  font-style:normal;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--maroon);
+  white-space:nowrap;
+}
+
+.list a:hover{
+  padding-left:14px;
+  background:rgba(0,178,202,.1);
+}
+
+/* TEAM */
+
+.group{
+  font:600 .78rem var(--sans);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--maroon);
+  margin:38px 0 14px;
+}
+
+.group:first-child{margin-top:0}
+
+.people{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:24px;
+}
+
+.person{
+  display:flex;
+  gap:14px;
+  align-items:center;
+}
+
+.ph{
+  flex:none;
+  width:62px;
+  height:62px;
+  border-radius:50%;
+  background:var(--navy);
+  color:var(--cream);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font:600 1.05rem var(--serif);
+}
+
+.person strong{
+  display:block;
+  font:600 1rem var(--serif);
+  color:var(--navy);
+  line-height:1.3;
+}
+
+.person small{
+  display:block;
+  color:var(--muted);
+  font-size:.82rem;
+  line-height:1.4;
+  margin-top:5px;
+}
+
+/* FOOTER */
+
+footer{
+  background:var(--maroon);
+  color:var(--cream);
+  padding:34px 0;
+  font-size:.88rem;
+}
+
+footer .wrap{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+footer a{color:var(--cream)}
+
+/* ACCESSIBILITY */
+
+a:focus-visible{
+  outline:3px solid var(--cyan);
+  outline-offset:4px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:860px){
+  .hero{padding:120px 0 70px}
+  .hero .wrap{
+    grid-template-columns:1fr;
+    gap:40px;
+  }
+  .sec-head{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  .num{font-size:2.2rem}
+  .body{margin-left:0}
+  .points{grid-template-columns:1fr}
+  .language-grid{grid-template-columns:1fr}
+  .pipe li{grid-template-columns:44px 1fr}
+  .pipe li span{grid-column:2}
+  section{padding:66px 0}
+}
+
+@media(max-width:600px){
+  .nav .wrap{gap:12px;padding:0 4%}
+  .brand{font-size:1rem}
+  .nav ul{flex:1}
+  .nav a.link{
+    font-size:.78rem;
+    padding:8px;
+  }
+  .qa{padding:18px}
+  .language-card{padding:20px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{
+    transition-duration:0.01ms!important;
+    animation-duration:0.01ms!important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAVIGATION -->
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">TR<span>-</span>RAG</a>
+
+    <ul>
+      <li><a class="link" href="#about">About</a></li>
+      <li><a class="link" href="#turkish">Why Turkish?</a></li>
+      <li><a class="link" href="#method">Method</a></li>
+      <li><a class="link" href="#evaluation">Evaluation</a></li>
+      <li><a class="link" href="#resources">Resources</a></li>
+      <li><a class="link" href="#team">Team</a></li>
+    </ul>
+  </div>
+
+  <div class="progress" id="progress"></div>
+</header>
+
+<!-- HERO -->
+
+<div class="hero" id="top">
+  <div class="wrap">
+
+    <div>
+      <p class="eyebrow">
+        Graduation Project · 2026–2027
+      </p>
+
+      <h1>
+        Turkish Question Answering,
+        Grounded in Its Sources
+      </h1>
+
+      <p class="lead">
+        A Turkish-focused Retrieval-Augmented Generation
+        research project exploring reliable question answering
+        from documents, verifiable source references,
+        and evidence-aware response generation.
+      </p>
+
+      <div class="btns">
+        <a class="btn solid" href="#about">
+          About the Project
+        </a>
+
+        <a class="btn ghost" href="#turkish">
+          Why Turkish?
+        </a>
+      </div>
+    </div>
+
+    <div class="qa" aria-label="Illustrative question-answering example">
+
+      <div class="row">
+        <span class="lbl">Question</span>
+        <span class="q">
+          Başvuru için son tarih nedir?
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="lbl">Answer</span>
+        Başvurular 15 Haziran'a kadar alınmaktadır.<sup>[1]</sup>
+
+        <span class="src">
+          [1] Yönerge.pdf, p. 4, section 2.3
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="lbl">Question</span>
+        <span class="q">
+          Başvuru ücreti ne kadardır?
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="lbl">Answer</span>
+
+        <span class="none">
+          Verilen belgelerde bu soruyu yanıtlamak için
+          yeterli bilgi bulunamadı.
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="lbl">Note</span>
+        <span class="src">
+          Illustrative interaction — not a live system output.
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ABOUT -->
+
+<section id="about">
+  <div class="wrap">
+
+    <div class="sec-head">
+      <div class="num">01</div>
+
+      <div>
+        <h2>About the Project</h2>
+
+        <p>
+          Building a more transparent and verifiable
+          question-answering system for Turkish documents.
+        </p>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <p>
+        TR-RAG is a graduation research project focused on
+        developing a Turkish question-answering assistant
+        using Retrieval-Augmented Generation (RAG).
+        Rather than relying solely on a language model's
+        internal knowledge, the proposed system retrieves
+        relevant information from documents before
+        generating an answer.
+      </p>
+
+      <p>
+        The system aims to provide answers supported by
+        identifiable source passages, allowing users to
+        verify the information against the original
+        documents. When the available evidence is
+        insufficient, the assistant is designed to
+        acknowledge this limitation instead of
+        generating unsupported information.
+      </p>
+
+      <p>
+        A central focus of the research is Turkish
+        language processing. By comparing different
+        retrieval and generation configurations,
+        the project will investigate how Turkish
+        linguistic characteristics influence retrieval
+        effectiveness, answer quality, and overall
+        system reliability.
+      </p>
+
+      <div class="points">
+
+        <div class="point">
+          <h3>Document-grounded answers</h3>
+          <p>
+            Answers are generated using relevant passages
+            retrieved from Turkish document collections.
+          </p>
+        </div>
+
+        <div class="point">
+          <h3>Verifiable citations</h3>
+          <p>
+            Generated responses aim to include references
+            that allow users to trace information back
+            to its source.
+          </p>
+        </div>
+
+        <div class="point">
+          <h3>Evidence-aware responses</h3>
+          <p>
+            The system is designed to recognize
+            insufficient evidence and avoid unsupported
+            answers.
+          </p>
+        </div>
+
+        <div class="point">
+          <h3>Turkish-focused research</h3>
+          <p>
+            The project evaluates RAG methods with
+            particular attention to the linguistic
+            properties of Turkish.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- WHY TURKISH -->
+
+<section id="turkish" class="alt">
+  <div class="wrap">
+
+    <div class="sec-head">
+      <div class="num">02</div>
+
+      <div>
+        <h2>Why Turkish?</h2>
+
+        <p>
+          Investigating how the linguistic structure of
+          Turkish affects retrieval-augmented
+          question answering.
+        </p>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <div class="language-intro">
+
+        <p>
+          Turkish presents distinctive challenges for
+          natural language processing due to its
+          agglutinative morphology, productive suffixation,
+          and flexible sentence structure.
+          These characteristics can influence how
+          questions and document passages are represented,
+          matched, and interpreted by RAG systems.
+        </p>
+
+        <p>
+          A question and its supporting document passage
+          may express related information using different
+          inflected forms of the same word. Consequently,
+          retrieval methods must account for variation
+          beyond exact keyword matches.
+        </p>
+
+        <p>
+          TR-RAG investigates how different document
+          processing, embedding, retrieval, and
+          re-ranking approaches perform when applied
+          to Turkish text.
+        </p>
+
+      </div>
+
+      <div class="language-grid">
+
+        <div class="language-card">
+          <span class="tag">01 / Morphology</span>
+
+          <h3>Agglutinative Language Structure</h3>
+
+          <p>
+            Turkish words can contain multiple suffixes
+            expressing grammatical relationships.
+            The resulting word forms may complicate
+            lexical matching and influence how
+            semantic representations are learned.
+          </p>
+        </div>
+
+        <div class="language-card">
+          <span class="tag">02 / Retrieval</span>
+
+          <h3>Lexical and Semantic Variation</h3>
+
+          <p>
+            Relevant questions and document passages
+            may use different surface forms.
+            The project will explore keyword-based,
+            semantic, and hybrid retrieval approaches
+            to address these variations.
+          </p>
+        </div>
+
+        <div class="language-card">
+          <span class="tag">03 / Representation</span>
+
+          <h3>Turkish-Capable Embeddings</h3>
+
+          <p>
+            Different embedding models may represent
+            Turkish vocabulary, inflection, and
+            sentence meaning with varying effectiveness.
+            Comparing these models is an important
+            component of the proposed research.
+          </p>
+        </div>
+
+        <div class="language-card">
+          <span class="tag">04 / Evaluation</span>
+
+          <h3>Language-Specific Performance</h3>
+
+          <p>
+            Retrieval and generation quality will be
+            examined using Turkish questions and
+            supporting documents, helping identify
+            effective configurations and recurring
+            challenges.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="language-example">
+
+        <span class="example-title">
+          Example · Turkish Morphology
+        </span>
+
+        <div class="word">
+          kitap<span>larımızdan</span>
+        </div>
+
+        <p>
+          kitap (book) + lar (plural) + ımız
+          (first-person plural possessive) + dan
+          (ablative case).
+          A single Turkish word can encode information
+          expressed through several words in English.
+          This illustrates why morphological variation
+          is relevant to retrieval and text representation.
+        </p>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- METHOD -->
+
+<section id="method">
+  <div class="wrap">
+
+    <div class="sec-head">
+      <div class="num">03</div>
+
+      <div>
+        <h2>Method</h2>
+
+        <p>
+          Multiple RAG configurations will be implemented
+          and systematically evaluated to identify
+          effective approaches for Turkish
+          document-based question answering.
+        </p>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <ol class="pipe">
+
+        <li>
+          <b>Document chunking</b>
+          <span>
+            Fixed-size, sentence-based, and overlapping
+            chunking strategies will be compared to
+            examine how document segmentation influences
+            retrieval quality.
+          </span>
+        </li>
+
+        <li>
+          <b>Turkish embedding models</b>
+          <span>
+            Different Turkish-capable embedding models
+            will be evaluated for their ability to
+            represent Turkish questions and document
+            passages.
+          </span>
+        </li>
+
+        <li>
+          <b>Vector databases</b>
+          <span>
+            Document embeddings will be indexed and
+            retrieved using different vector database
+            configurations.
+          </span>
+        </li>
+
+        <li>
+          <b>Hybrid search</b>
+          <span>
+            Keyword-based retrieval using BM25 will be
+            combined with semantic similarity search
+            to investigate whether complementary
+            retrieval signals improve relevant
+            passage selection.
+          </span>
+        </li>
+
+        <li>
+          <b>Re-ranking</b>
+          <span>
+            Retrieved passages will be re-scored to
+            prioritize evidence that is most relevant
+            to the user's question.
+          </span>
+        </li>
+
+        <li>
+          <b>Answer generation</b>
+          <span>
+            Open-source language models will generate
+            Turkish answers from retrieved context,
+            accompanied by source references when
+            sufficient evidence is available.
+          </span>
+        </li>
+
+      </ol>
+
+    </div>
+  </div>
+</section>
+
+<!-- EVALUATION -->
+
+<section id="evaluation" class="alt">
+  <div class="wrap">
+
+    <div class="sec-head">
+      <div class="num">04</div>
+
+      <div>
+        <h2>Evaluation</h2>
+
+        <p>
+          Comparing answer quality, evidence reliability,
+          and efficiency across RAG configurations.
+        </p>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <p>
+        The proposed configurations will be evaluated
+        using a common set of Turkish questions and
+        reference documents. The evaluation will focus
+        on the correctness of generated answers, their
+        relationship to the retrieved evidence, and
+        the computational efficiency of the system.
+      </p>
+
+      <div class="tw">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>What it measures</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr>
+              <td>Answer accuracy</td>
+              <td>
+                Whether the generated answer is correct
+                according to the information contained
+                in the reference documents.
+              </td>
+            </tr>
+
+            <tr>
+              <td>Source consistency</td>
+              <td>
+                Whether cited passages actually support
+                the claims made in the generated answer.
+              </td>
+            </tr>
+
+            <tr>
+              <td>Hallucination rate</td>
+              <td>
+                How frequently generated answers include
+                information that is not supported by
+                the available evidence.
+              </td>
+            </tr>
+
+            <tr>
+              <td>Response time</td>
+              <td>
+                The time required to retrieve relevant
+                information and generate a response.
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+      </div>
+
+      <p style="margin-top:22px">
+        The results will be analyzed to identify
+        which approaches perform effectively on
+        Turkish-language content and to examine
+        trade-offs between answer reliability,
+        retrieval quality, and response time.
+      </p>
+
+    </div>
+  </div>
+</section>
+
+<!-- RESOURCES -->
+
+<section id="resources">
+  <div class="wrap">
+
+    <div class="sec-head">
+      <div class="num">05</div>
+
+      <div>
+        <h2>Resources</h2>
+
+        <p>
+          Project materials, source code, and
+          demonstrations will be shared as
+          development progresses.
+        </p>
+      </div>
+    </div>
+
+    <div class="body list">
+
+      <a href="#top">
+        <span>
+          Source Code
+          <small>· GitHub repository</small>
+        </span>
+        <em>Coming Soon</em>
+      </a>
+
+      <a href="#top">
+        <span>
+          Demo Video
+          <small>· System demonstration</small>
+        </span>
+        <em>Coming Soon</em>
+      </a>
+
+      <a href="#top">
+        <span>
+          Project Poster
+          <small>· Research overview</small>
+        </span>
+        <em>Coming Soon</em>
+      </a>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- TEAM -->
+
+<section id="team" class="alt" style="border-bottom:0">
+  <div class="wrap">
+
+    <div class="sec-head">
+      <div class="num">06</div>
+
+      <div>
+        <h2>Team</h2>
+
+        <p>
+          Project team, academic supervisor,
+          and jury members.
+        </p>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <div class="group">Team Members</div>
+
+      <div class="people">
+
+        <div class="person">
+          <div class="ph">PA</div>
+
+          <div>
+            <strong>Pınar ATABEY</strong>
+            <small>Computer Engineering</small>
+          </div>
+        </div>
+
+        <div class="person">
+          <div class="ph">EC</div>
+
+          <div>
+            <strong>Elif Şimay COŞKUN</strong>
+            <small>Computer Engineering</small>
+          </div>
+        </div>
+
+        <div class="person">
+          <div class="ph">SS</div>
+
+          <div>
+            <strong>Senanur SAĞLAM</strong>
+            <small>Computer Engineering</small>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="group">Project Supervisor</div>
+
+      <div class="people">
+
+        <div class="person">
+          <div class="ph">GY</div>
+
+          <div>
+            <strong>Gökçe Nur YILMAZ</strong>
+            <small>Project Supervisor</small>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="group">Jury Members</div>
+
+      <div class="people">
+
+        <div class="person">
+          <div class="ph">MC</div>
+
+          <div>
+            <strong>Mert Burkay ÇÖTELİ</strong>
+            <small>Jury Member</small>
+          </div>
+        </div>
+
+        <div class="person">
+          <div class="ph">EC</div>
+
+          <div>
+            <strong>Mehmet Evren COŞKUN</strong>
+            <small>Jury Member</small>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+
+<footer>
+  <div class="wrap">
+
+    <span>
+      © 2026 TR-RAG · TED University,
+      Department of Computer Engineering
+    </span>
+
+    <a href="#top">
+      Back to top ↑
+    </a>
+
+  </div>
+</footer>
+
+<!-- INTERACTIONS -->
+
+<script>
+(function(){
+
+  var links = [].slice.call(
+    document.querySelectorAll('.nav a.link')
+  );
+
+  var secs = links.map(function(a){
+    return document.querySelector(
+      a.getAttribute('href')
+    );
+  });
+
+  var bar = document.getElementById('progress');
+  var previousActive = -2;
+
+  function update(){
+
+    var y = window.scrollY + 120;
+    var cur = -1;
+
+    secs.forEach(function(s,i){
+      if(s && s.offsetTop <= y){
+        cur = i;
+      }
+    });
+
+    if(
+      window.innerHeight + window.scrollY >=
+      document.documentElement.scrollHeight - 4
+    ){
+      cur = secs.length - 1;
+    }
+
+    links.forEach(function(a,i){
+      a.classList.toggle('active',i===cur);
+    });
+
+    if(cur !== previousActive && cur >= 0){
+
+      var active = links[cur];
+      var ul = active.parentNode.parentNode;
+
+      ul.scrollLeft =
+        active.offsetLeft -
+        ul.clientWidth / 2 +
+        active.clientWidth / 2;
+
+    }
+
+    previousActive = cur;
+
+    var h =
+      document.documentElement.scrollHeight -
+      window.innerHeight;
+
+    bar.style.width =
+      (h > 0 ? window.scrollY / h * 100 : 0) + '%';
+
+  }
+
+  window.addEventListener(
+    'scroll',
+    update,
+    {passive:true}
+  );
+
+  window.addEventListener('resize',update);
+
+  update();
+
+})();
+</script>
+
+</body>
+</html>
